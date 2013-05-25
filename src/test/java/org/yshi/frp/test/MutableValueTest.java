@@ -7,6 +7,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.yshi.frp.MutableInteger;
 import org.yshi.frp.MutableValue;
+import org.yshi.frp.func.BinaryFunction;
 import org.yshi.frp.func.UnaryFunction;
 
 /**
@@ -46,5 +47,49 @@ public class MutableValueTest {
         ms0.set("d");
         assertEquals("ms1 should be db", ms1.get(), "db");
         assertEquals("ms2 should be dbc", ms2.get(), "dbc");
+    }
+
+    @Test
+    public void testJoinChangesFalse() {
+        MutableValue<String> ms3 = new MutableValue<String>("any");
+        MutableValue<Boolean> is_same = new MutableValue<Boolean>(ms0, ms3, new BinaryFunction<String, String, Boolean>() {
+            @Override
+            public Boolean evaluate(String arg0, String arg1) {
+                return arg0.equals(arg1);
+            }
+        });
+        assertFalse("is_same should return false", is_same.get());
+    }
+
+    @Test
+    public void testJoinChangesTrue() {
+        MutableValue<String> ms3 = new MutableValue<String>("abc");
+        MutableValue<Boolean> is_same = new MutableValue<Boolean>(ms2, ms3, new BinaryFunction<String, String, Boolean>() {
+            @Override
+            public Boolean evaluate(String arg0, String arg1) {
+                return arg0.equals(arg1);
+            }
+        });
+        assertTrue("is_same should return false", is_same.get());
+    }
+
+    @Test
+    public void testJoinChangesFalseThenTrue() {
+        MutableValue<String> ms3Prec = new MutableValue<String>("z");
+        MutableValue<String> ms3 = ms3Prec.transform(new UnaryFunction<String, String>() {
+            @Override
+            public String evaluate(String input) {
+                return input.concat("b");
+            }
+        });
+        MutableValue<Boolean> is_same = new MutableValue<Boolean>(ms1, ms3, new BinaryFunction<String, String, Boolean>() {
+            @Override
+            public Boolean evaluate(String arg0, String arg1) {
+                return arg0.equals(arg1);
+            }
+        });
+        assertFalse("is_same should return false", is_same.get());
+        ms3Prec.set("a");
+        assertTrue("is_same should return true", is_same.get());
     }
 }
